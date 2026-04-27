@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -238,8 +238,8 @@ function solveAlgorithm() {
   }
 
   let total = hits + faults;
-  let hitRatio = ((hits / total) * 100).toFixed(2);
-  let faultRatio = ((faults / total) * 100).toFixed(2);
+  let hitRatio = total > 0 ? ((hits / total) * 100).toFixed(2) : "0.00";
+  let faultRatio = total > 0 ? ((faults / total) * 100).toFixed(2) : "0.00";
 
   let html = `
     <div class="summary">
