@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page Replacement Algorithm Solver</title>
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+      font-family:Arial,sans-serif;
+      background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);
+      color:#333;
+      overflow-x:hidden;
+      padding:20px;
+    }
+
+    .container{
+      max-width:1100px;
+      margin:auto;
+      background:rgba(255,255,255,0.95);
+      padding:30px;
+      border-radius:15px;
+      box-shadow:0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    h1{
+      text-align:center;
+      margin-bottom:30px;
+      color:#1a1a2e;
+    }
+
+    .form-group{
+      margin-bottom:20px;
+    }
+
+    label{
+      display:block;
+      margin-bottom:8px;
+      font-weight:bold;
+    }
+
+    input,select{
+      width:100%;
+      padding:12px;
+      border:2px solid #ccc;
+      border-radius:8px;
+      font-size:16px;
+    }
+
+    button{
+      background:#ffd700;
+      color:#000;
+      border:none;
+      padding:12px 25px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:bold;
+      font-size:16px;
+    }
+
+    button:hover{
+      background:#f4c400;
+    }
+
+    .summary{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+      gap:20px;
+      margin-top:25px;
+    }
+
+    .summary-item{
+      background:#f8f8f8;
+      padding:20px;
+      text-align:center;
+      border-radius:10px;
+    }
+
+    .value{
+      font-size:24px;
+      font-weight:bold;
+    }
+
+    .hits{ color:green; }
+    .faults{ color:red; }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:20px;
+    }
+
+    th,td{
+      border:1px solid #ddd;
+      padding:10px;
+      text-align:center;
+    }
+
+    th{
+      background:#1a1a2e;
+      color:#ffd700;
+    }
+
+    .frame{
+      display:inline-block;
+      padding:5px 10px;
+      margin:2px;
+      background:#eee;
+      border-radius:5px;
+    }
+
+    .hit{
+      color:green;
+      font-weight:bold;
+    }
+
+    .fault{
+      color:red;
+      font-weight:bold;
+    }
+
+    .error{
+      margin-top:20px;
+      padding:12px;
+      background:red;
+      color:white;
+      border-radius:6px;
+      text-align:center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Page Replacement Algorithm Solver</h1>
+
+  <div class="form-group">
+    <label>Reference String (space-separated)</label>
+    <input type="text" id="referenceString" value="7 0 1 2 0 3 0 4 2 3 0 3 2">
+  </div>
+
+  <div class="form-group">
+    <label>Number of Frames</label>
+    <input type="number" id="frames" value="3" min="1" max="10">
+  </div>
+
+  <div class="form-group">
+    <label>Algorithm</label>
+    <select id="algorithm">
+      <option value="fifo">FIFO</option>
+      <option value="lru">LRU</option>
+      <option value="optimal">Optimal</option>
+    </select>
+  </div>
+
+  <button onclick="solveAlgorithm()">Solve</button>
+
+  <div id="error"></div>
+  <div id="result"></div>
+</div>
+
+<script>
+function solveAlgorithm() {
+  const refString = document.getElementById("referenceString").value.trim().split(/\s+/).map(Number);
+  const frameCount = parseInt(document.getElementById("frames").value);
+  const algorithm = document.getElementById("algorithm").value;
+  const resultDiv = document.getElementById("result");
+  const errorDiv = document.getElementById("error");
+
+  errorDiv.innerHTML = "";
+  resultDiv.innerHTML = "";
+
+  if (refString.some(isNaN)) {
+    errorDiv.innerHTML = '<div class="error">Invalid reference string</div>';
+    return;
+  }
+
+  let frames = [];
+  let faults = 0;
+  let hits = 0;
+  let steps = [];
+  let pointer = 0;
+
+  for (let i = 0; i < refString.length; i++) {
+    let page = refString[i];
+    let hit = frames.includes(page);
+
+    if (hit) {
+      hits++;
+    } else {
+      faults++;
+      if (frames.length < frameCount) {
+        frames.push(page);
+      } else {
+        if (algorithm === "fifo") {
+          frames[pointer] = page;
+          pointer = (pointer + 1) % frameCount;
+        } else if (algorithm === "lru") {
+          let leastIndex = Infinity;
+          let replaceIndex = 0;
+          for (let j = 0; j < frames.length; j++) {
+            let lastUsed = refString.slice(0, i).lastIndexOf(frames[j]);
+            if (lastUsed < leastIndex) {
+              leastIndex = lastUsed;
+              replaceIndex = j;
+            }
+          }
+          frames[replaceIndex] = page;
+        } else if (algorithm === "optimal") {
+          let farthest = -1;
+          let replaceIndex = 0;
+          for (let j = 0; j < frames.length; j++) {
+            let nextUse = refString.slice(i + 1).indexOf(frames[j]);
+            if (nextUse === -1) {
+              replaceIndex = j;
+              break;
+            }
+            if (nextUse > farthest) {
+              farthest = nextUse;
+              replaceIndex = j;
+            }
+          }
+          frames[replaceIndex] = page;
+        }
+      }
+    }
+
+    steps.push({
+      page,
+      frames: [...frames],
+      hit
+    });
+  }
+
+  let total = hits + faults;
+  let hitRatio = ((hits / total) * 100).toFixed(2);
+  let faultRatio = ((faults / total) * 100).toFixed(2);
+
+  let html = `
+    <div class="summary">
+      <div class="summary-item"><div>Total Hits</div><div class="value hits">${hits}</div></div>
+      <div class="summary-item"><div>Total Faults</div><div class="value faults">${faults}</div></div>
+      <div class="summary-item"><div>Hit Ratio</div><div class="value">${hitRatio}%</div></div>
+      <div class="summary-item"><div>Fault Ratio</div><div class="value">${faultRatio}%</div></div>
+    </div>
+
+    <h2 style="margin-top:30px;">Step-by-Step Execution</h2>
+    <table>
+      <tr>
+        <th>Step</th>
+        <th>Page</th>
+        <th>Frames</th>
+        <th>Status</th>
+      </tr>
+  `;
+
+  steps.forEach((step, index) => {
+    html += `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${step.page}</td>
+        <td>${step.frames.map(f => `<span class="frame">${f}</span>`).join("")}</td>
+        <td>${step.hit ? '<span class="hit">HIT</span>' : '<span class="fault">FAULT</span>'}</td>
+      </tr>
+    `;
+  });
+
+  html += `</table>`;
+  resultDiv.innerHTML = html;
+}
+</script>
+
+</body>
+</html>
